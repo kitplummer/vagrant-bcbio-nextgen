@@ -3,9 +3,14 @@ file { '/etc/motd':
               Managed by Puppet.\n"
 }
 
-Exec { path => [ "/bin/", "/sbin/" , "/usr/bin/", "/usr/sbin/" ] }
+Exec { path => [ "~/bin", "/bin/", "/sbin/" , "/usr/bin/", "/usr/sbin/" ] }
                 
 package { "git": ensure => installed }
+package { "gcc": ensure => installed }
+package { "perl-devel": ensure => installed }
+package { "expat-devel": ensure => installed }
+package { "patch": ensure => installed }
+package { "xz": ensure => installed }
 
 exec {"epel":
   command => "rpm -Uvh http://mirror.umd.edu/fedora/epel/6/i386/epel-release-6-8.noarch.rpm",
@@ -19,11 +24,19 @@ exec { "argparse":
   require => Package["python-pip"]
 }
 
-exec { "bcbio":
+exec { "get_bcbio":
   cwd         => "/tmp",
   user        => "vagrant",
   environment => "USER=vagrant",
-  command     => "wget https://raw.github.com/chapmanb/bcbio-nextgen/master/scripts/bcbio_nextgen_install.py; python bcbio_nextgen_install.py /usr/local/share/bcbio-nextgen --tooldir=/usr/local",
+  command     => "wget https://raw.github.com/chapmanb/bcbio-nextgen/master/scripts/bcbio_nextgen_install.py",
   require     => [Exec["argparse"],Package["git"]],
-  timeout     => 3000
-}
+  creates     => "/tmp/bcbio_nextgen_install.py",
+  timeout     => 300
+} ->
+exec { "install_bcbio":
+  cwd         => "/tmp",
+  user        => "vagrant",
+  environment => "USER=vagrant",
+  command     => "python bcbio_nextgen_install.py /home/vagrant/bcbio-nextgen --distribution centos --tooldir=/home/vagrant --isolate",
+  timeout     => 10000 
+}  
