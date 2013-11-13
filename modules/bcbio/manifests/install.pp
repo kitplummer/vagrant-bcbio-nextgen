@@ -2,19 +2,16 @@ class bcbio::install inherits bcbio {
   
   Exec { path => [ "~/bin", "/bin/", "/sbin/" , "/usr/bin/", "/usr/sbin/" ] }
                 
-  package { "git": ensure         => installed }
-  package { "gcc": ensure         => installed }
-  package { "perl-devel": ensure  => installed }
-  package { "expat-devel": ensure => installed }
-  package { "patch": ensure       => installed }
-  package { "xz": ensure          => installed }
-
-  exec {"epel":
-    command => "rpm -Uvh http://mirror.umd.edu/fedora/epel/6/i386/epel-release-6-8.noarch.rpm",
-    returns => [0,1]
+  case $operatingsystem {
+	  /^(Debian|Ubuntu)$/:	{ include bcbio::debian }
+	  'RedHat','CentOS':	{ include bcbio::redhat }
   }
 
-  package { "python-pip": ensure => installed, require => Exec["epel"] }
+  $os_lowercase = downcase($operatingsystem)
+
+  package { "git": ensure         => installed }
+  package { "gcc": ensure         => installed }
+  package { "patch": ensure       => installed }
 
   exec { "argparse":
     command => "pip install argparse",
@@ -23,8 +20,8 @@ class bcbio::install inherits bcbio {
   
   exec { "get_bcbio":
     cwd         => "/tmp",
-    user        => "vagrant",
-    environment => "USER=vagrant",
+    user        => $user,
+    environment => "USER=${user}",
     command     => "wget https://raw.github.com/chapmanb/bcbio-nextgen/master/scripts/bcbio_nextgen_install.py",
     require     => [Exec["argparse"],Package["git"]],
     creates     => "/tmp/bcbio_nextgen_install.py",
@@ -32,9 +29,27 @@ class bcbio::install inherits bcbio {
   } ->
   exec { "install_bcbio":
     cwd         => "/tmp",
-    user        => "vagrant",
-    environment => "USER=vagrant",
-    command     => "python bcbio_nextgen_install.py /home/vagrant/bcbio-nextgen --distribution centos --tooldir=/home/vagrant --isolate",
+    #user        => $user,
+    environment => "USER=${user}",
+    command     => "su - ${user} -c \"python /tmp/bcbio_nextgen_install.py /home/${user}/bcbio-nextgen --distribution ${os_lowercase} --tooldir=/home/${user} --nodata\"",
     timeout     => 10000 
   }  
+}
+
+class bcbio::debian {
+  package { "libperl-dev": ensure => installed }
+  package { "libexpat-dev": ensure => installed }
+  package { "xz-utils": ensure  => installed }
+  package { "python-pip": ensure => installed }
+}
+
+class bcbio::redhat {
+  package { "perl-devel": ensure  => installed }
+  package { "expat-devel": ensure => installed }
+  package { "xz": ensure    => installed }
+  exec {"epel":
+    command => "rpm -Uvh http://mirror.umd.edu/fedora/epel/6/i386/epel-release-6-8.noarch.rpm",
+    returns => [0,1]
+  }
+  package { "python-pip": ensure => installed, require => Exec["epel"] }
 }
