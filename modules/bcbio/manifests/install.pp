@@ -41,6 +41,8 @@ class bcbio::debian {
   package { "libexpat-dev": ensure => installed }
   package { "xz-utils": ensure  => installed }
   package { "python-pip": ensure => installed }
+  package { "g++": ensure => installed }
+  package { "zlib1g-dev": ensure => installed }
 }
 
 class bcbio::redhat {
