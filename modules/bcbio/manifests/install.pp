@@ -29,9 +29,9 @@ class bcbio::install inherits bcbio {
   } ->
   exec { "install_bcbio":
     cwd         => "/tmp",
-    #user        => $user,
+    user        => $user,
     environment => "USER=${user}",
-    command     => "su - ${user} -c \"python /tmp/bcbio_nextgen_install.py /home/${user}/bcbio-nextgen --distribution ${os_lowercase} --tooldir=/home/${user} --nodata\"",
+    command     => "python /tmp/bcbio_nextgen_install.py /home/${user}/bcbio-nextgen --distribution ${os_lowercase} --tooldir=/home/${user} --nodata --isolate",
     timeout     => 10000 
   }  
 }
